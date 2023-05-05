@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect
 from .forms import DweetForm, NewUserForm
-from .models import Dweet, Profile
+from .models import Dweet, Profile, Like
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
+
 
 def dashboard(request):
     form = DweetForm(request.POST or None)
@@ -13,13 +14,33 @@ def dashboard(request):
             dweet.user = request.user
             dweet.save()
             return redirect("dwitter:dashboard")
-
-
     followed_dweets = Dweet.objects.filter(
         user__profile__in=request.user.profile.follows.all()
     ).order_by("-created_at")
 
     return render (request, "dwitter/dashboard.html", {"form":form, "dweets": followed_dweets})
+
+def like_post(request):
+    user = request.user
+    if request.method == 'POST':
+        post_id = request.POST.get('dweet_id')
+        post_obj = Dweet.objects.get(id=post_id)
+          
+        if user in post_obj.liked.all():
+            post_obj.liked.remove(user)
+        else:
+            post_obj.liked.add(user)
+        
+        like, created = Like.objects.get_or_create(user=user, post_id=post_id)
+
+        if not created:
+            if like.value == 'Like':
+                like.value = 'Unlike'
+            else:
+                like.value = 'Like'
+        like.save()
+    return redirect('dwitter:dashboard')
+
 
 def profile_list(request):
     profiles = Profile.objects.exclude(user=request.user)

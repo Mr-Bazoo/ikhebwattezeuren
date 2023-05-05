@@ -21,11 +21,10 @@ def create_profile(sender, instance, created, **kwargs):
 		user_profile.save()
 
 class Dweet(models.Model):
-    user = models.ForeignKey(
-        User, related_name="dweets", on_delete=models.DO_NOTHING
-    )
+    user = models.ForeignKey(User, related_name="dweets", on_delete=models.DO_NOTHING)
     body = models.CharField(max_length=140)
     created_at = models.DateTimeField(auto_now_add=True)
+    liked = models.ManyToManyField(User, default=None, blank=True, related_name='liked')
 
     def __str__(self):
         return (
@@ -33,3 +32,22 @@ class Dweet(models.Model):
             f"({self.created_at:%Y-%m-%d %H:%M}): "
             f"{self.body[:30]}..."
         )
+    
+    @property
+    def num_likes(self):
+         return self.liked.all().count()
+
+LIKE_CHOICES = (
+     ('Like', 'Like'),
+     ('Unlike', 'Unlike')
+)
+
+class Like(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Dweet, on_delete=models.CASCADE)
+    value = models.CharField(choices=LIKE_CHOICES, default='Like', max_length=10)
+
+
+
+def __str__(self):
+    return str(self.dweet)
